@@ -80,7 +80,6 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
         final MarkableEndPoint endPoint = new MarkableEndPoint(realEndPoint);
         final PlainOrTlsConnection plainOrTlsConnection = new PlainOrTlsConnection(connector, endPoint);
         endPoint.setConnection(plainOrTlsConnection);
-
         return plainOrTlsConnection;
 
     }
@@ -127,13 +126,11 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
         @Override
         public void addListener(Listener listener)
         {
-            if (_actualConnection == null)
+            _listeners.add(listener);
+            AbstractConnection actualConnection = _actualConnection;
+            if (actualConnection != null)
             {
-                _listeners.add(listener);
-            }
-            else
-            {
-                _actualConnection.addListener(listener);
+                actualConnection.addListener(listener);
             }
         }
 
@@ -141,6 +138,11 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
         public void removeListener(Listener listener)
         {
             _listeners.remove(listener);
+            AbstractConnection actualConnection = _actualConnection;
+            if (actualConnection != null)
+            {
+                actualConnection.removeListener(listener);
+            }
         }
 
         @Override
@@ -157,6 +159,11 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
                 listener.onOpened(this);
             }
 
+            final AbstractConnection actualConnection = _actualConnection;
+            if (actualConnection != null)
+            {
+                actualConnection.onOpen();
+            }
         }
 
         @Override
@@ -167,10 +174,17 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
                 LOG.debug("onClose {}", this);
             }
 
+            final AbstractConnection actualConnection = _actualConnection;
+            if (actualConnection != null)
+            {
+                actualConnection.onClose();
+            }
+
             for (Listener listener : _listeners)
             {
                 listener.onClosed(this);
             }
+
         }
 
         @Override
@@ -297,6 +311,7 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
                             final EndPoint decryptedEndPoint = sslConnection.getDecryptedEndPoint();
                             Connection connection = next.newConnection(_connector, decryptedEndPoint);
                             decryptedEndPoint.setConnection(connection);
+
                         }
                         else
                         {
@@ -350,7 +365,10 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
 
         private SslConnection newSslConnection(final Connector connector, final EndPoint endPoint, final SSLEngine engine)
         {
-            return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
+            final SslConnection sslConnection =
+                    new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine);
+            TlsOrPlainConnectionFactory.this.configure(sslConnection, _connector, _endPoint);
+            return sslConnection;
         }
 
 
