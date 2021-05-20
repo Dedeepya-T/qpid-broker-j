@@ -205,17 +205,22 @@ public class FileBasedGroupProviderImpl
             {
                 throw new IllegalConfigurationException(String.format("Group provider '%s' is not activated. Cannot create a group.", getName()));
             }
+            Set<String> availableGroups = _groupDatabase.getAllGroups();
+            if(!availableGroups.contains(groupName))
+            {
+                _groupDatabase.createGroup(groupName);
 
-            _groupDatabase.createGroup(groupName);
-
-            Map<String,Object> attrMap = new HashMap<String, Object>();
-            UUID id = UUID.randomUUID();
-            attrMap.put(ConfiguredObject.ID, id);
-            attrMap.put(ConfiguredObject.NAME, groupName);
-            GroupAdapter groupAdapter = new GroupAdapter(attrMap);
-            groupAdapter.create();
-            return Futures.immediateFuture((C) groupAdapter);
-
+                Map<String, Object> attrMap = new HashMap<String, Object>();
+                UUID id = UUID.randomUUID();
+                attrMap.put(ConfiguredObject.ID, id);
+                attrMap.put(ConfiguredObject.NAME, groupName);
+                GroupAdapter groupAdapter = new GroupAdapter(attrMap);
+                groupAdapter.create();
+                return Futures.immediateFuture((C) groupAdapter);
+            }
+            else{
+                throw new IllegalConfigurationException(String.format("Group with name '%s' already exists", groupName));
+            }
         }
         else
         {
