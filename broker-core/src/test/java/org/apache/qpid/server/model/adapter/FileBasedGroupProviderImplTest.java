@@ -29,6 +29,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -362,6 +364,60 @@ public class FileBasedGroupProviderImplTest extends UnitTestBase
         {
             // PASS
         }
+    }
+
+    @Test(expected = IllegalConfigurationException.class)
+    public void testDuplicateAddGroup() throws Exception
+    {
+        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
+
+        Map<String, Object> providerAttrs = new HashMap<>();
+        String groupsFile = _groupFile.getAbsolutePath();
+        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
+        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
+        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
+
+        @SuppressWarnings("unchecked")
+        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+
+        assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
+
+        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
+        Group superGroup = provider.createChild(Group.class, groupAttrs);
+        assertThat(superGroup.getName(), is(equalTo("supers")));
+
+        provider.createChild(Group.class, groupAttrs);
+        assertThrows("Group with name supers already exists", IllegalConfigurationException.class, null);
+        assertThat(superGroup.getChildren(Group.class).size(), is(equalTo(1)));
+
+    }
+    @Test(expected = IllegalConfigurationException.class)
+    public void testDuplicateAddMember() throws Exception
+    {
+        _groupFile = createTemporaryGroupFile(Collections.emptyMap());
+
+        Map<String, Object> providerAttrs = new HashMap<>();
+        String groupsFile = _groupFile.getAbsolutePath();
+        providerAttrs.put(FileBasedGroupProvider.TYPE, GROUP_FILE_PROVIDER_TYPE);
+        providerAttrs.put(FileBasedGroupProvider.PATH, groupsFile);
+        providerAttrs.put(FileBasedGroupProvider.NAME, getTestName());
+
+        @SuppressWarnings("unchecked")
+        GroupProvider<?> provider = _objectFactory.create(GroupProvider.class, providerAttrs, _broker);
+
+        assertThat(provider.getChildren(Group.class).size(), is(equalTo(0)));
+
+        final Map<String, Object> groupAttrs = Collections.singletonMap(Group.NAME, "supers");
+        Group superGroup = provider.createChild(Group.class, groupAttrs);
+        assertThat(superGroup.getName(), is(equalTo("supers")));
+
+        final Map<String, Object> memberAttrs1 = Collections.singletonMap(GroupMember.NAME, "root1");
+        GroupMember rootMember = (GroupMember) superGroup.createChild(GroupMember.class, memberAttrs1);
+        assertThat(rootMember.getName(), is(equalTo("root1")));
+
+        superGroup.createChild(GroupMember.class, memberAttrs1);
+        assertThrows("Group member with name root1 already exists", IllegalConfigurationException.class, null);
+        assertThat(superGroup.getChildren(GroupMember.class).size(), is(equalTo(1)));
     }
 
     private File createTemporaryGroupFile(Map<String, Set<String>> groups) throws Exception
