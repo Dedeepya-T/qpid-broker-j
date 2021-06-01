@@ -21,7 +21,6 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,14 +32,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
@@ -66,7 +63,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         super(container, attributes);
         _container = container;
         _eventLogger = _container.getEventLogger();
-        _eventLogger.message(AuthenticationProviderMessages.CREATE(getName()));
     }
 
     @Override
@@ -130,13 +126,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
-    {
-        _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
-        return super.onDelete();
-    }
-
-    @Override
     public final List<String> getSecureOnlyMechanisms()
     {
         return _secureOnlyMechanisms;
@@ -159,4 +148,34 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     {
         return _eventLogger;
     }
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        _eventLogger.message(AuthenticationProviderMessages.CREATE(getName(),
+                                                                   String.valueOf(outcome),
+                                                                   attributesAsString(attributes)));
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        _eventLogger.message(AuthenticationProviderMessages.OPEN(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        _eventLogger.message(AuthenticationProviderMessages.DELETE(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        _eventLogger.message(AuthenticationProviderMessages.UPDATE(getName(),
+                                                                   String.valueOf(outcome),
+                                                                   attributesAsString(attributes)));
+    }
+
 }

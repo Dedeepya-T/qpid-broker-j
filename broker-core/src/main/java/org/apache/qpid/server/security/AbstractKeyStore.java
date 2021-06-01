@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.KeyStoreMessages;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -66,7 +67,6 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
 
         _broker = broker;
         _eventLogger = broker.getEventLogger();
-        _eventLogger.message(KeyStoreMessages.CREATE(getName()));
     }
 
     public final Broker<?> getBroker()
@@ -98,7 +98,7 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     @Override
     protected void logOperation(final String operation)
     {
-        _broker.getEventLogger().message(KeyStoreMessages.OPERATION(operation));
+        _eventLogger.message(KeyStoreMessages.OPERATION(operation));
     }
 
     protected void initializeExpiryChecking()
@@ -168,7 +168,6 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     protected ListenableFuture<Void> onDelete()
     {
         onCloseOrDelete();
-        getEventLogger().message(KeyStoreMessages.DELETE(getName()));
         return super.onDelete();
     }
 
@@ -217,4 +216,33 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     }
 
     protected abstract Collection<Certificate> getCertificates();
+
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        _eventLogger.message(KeyStoreMessages.CREATE(getName(),
+                                                     String.valueOf(outcome),
+                                                     attributesAsString(attributes)));
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        _eventLogger.message(KeyStoreMessages.OPEN(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        _eventLogger.message(KeyStoreMessages.DELETE(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        _eventLogger.message(KeyStoreMessages.UPDATE(getName(),
+                                                     String.valueOf(outcome),
+                                                     attributesAsString(attributes)));
+    }
 }

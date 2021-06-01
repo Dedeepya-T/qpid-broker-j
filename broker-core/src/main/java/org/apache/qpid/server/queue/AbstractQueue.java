@@ -82,6 +82,7 @@ import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.logging.messages.SenderMessages;
@@ -300,6 +301,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _queueConsumerManager = new QueueConsumerManagerImpl(this);
 
         _virtualHost = virtualHost;
+        _logSubject = new QueueLogSubject(getName(), _virtualHost.getName());
     }
 
     @Override
@@ -366,8 +368,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         arguments.put(Queue.LIFETIME_POLICY, getLifetimePolicy());
 
         _arguments = Collections.synchronizedMap(arguments);
-
-        _logSubject = new QueueLogSubject(this);
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
@@ -488,11 +488,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
-
-        // Log the creation of this Queue.
-        // The priorities display is toggled on if we set priorities > 0
-        getEventLogger().message(_logSubject,
-                                 getCreatedLogMessage());
 
         switch(getMessageGroupType())
         {
@@ -617,19 +612,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _rejectPolicyHandler = rejectPolicyHandler;
         _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
-    }
-
-    protected LogMessage getCreatedLogMessage()
-    {
-        String ownerString = getOwner();
-        return QueueMessages.CREATED(getId().toString(),
-                                     ownerString,
-                                     0,
-                                     ownerString != null,
-                                     getLifetimePolicy() != LifetimePolicy.PERMANENT,
-                                     isDurable(),
-                                     !isDurable(),
-                                     false);
     }
 
     private MessageDestination getOpenedMessageDestination(final String name)
@@ -2032,8 +2014,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 performQueueDeleteTasks();
 
-                //Log Queue Deletion
-                getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
                 _deleteQueueDepthFuture.set(queueDepthMessages);
 
             _transactions.clear();
@@ -3970,4 +3950,34 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
+    protected void logCreated(final Map<String, Object> attributes,
+                              final Outcome outcome)
+    {
+        getEventLogger().message(_logSubject,
+                                 QueueMessages.CREATE(getName(),
+                                                      String.valueOf(outcome),
+                                                      attributesAsString(attributes)));
+    }
+
+    @Override
+    protected void logRecovered(final Outcome outcome)
+    {
+        getEventLogger().message(_logSubject, QueueMessages.OPEN(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logDeleted(final Outcome outcome)
+    {
+        getEventLogger().message(_logSubject, QueueMessages.DELETE(getName(), String.valueOf(outcome)));
+    }
+
+    @Override
+    protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
+    {
+        getEventLogger().message(_logSubject,
+                                 QueueMessages.UPDATE(getName(),
+                                                      String.valueOf(outcome),
+                                                      attributesAsString(attributes)));
+    }
 }

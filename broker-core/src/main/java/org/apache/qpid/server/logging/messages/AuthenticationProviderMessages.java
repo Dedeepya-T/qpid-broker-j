@@ -69,6 +69,7 @@ public class AuthenticationProviderMessages
     public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.delete";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.open";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.operation";
+    public static final String UPDATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.update";
 
     static
     {
@@ -79,6 +80,7 @@ public class AuthenticationProviderMessages
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(UPDATE_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AuthenticationProvider_logmessages", _currentLocale);
     }
@@ -168,16 +170,21 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1003 : Close</pre>
+     * <pre>ATH-1003 : Close : "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage CLOSE(String param1)
     {
         String rawMessage = _messages.getString("CLOSE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -223,16 +230,16 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1001 : Create "{0}"</pre>
+     * <pre>ATH-1001 : Create : "{0}" : {1} : {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1)
+    public static LogMessage CREATE(String param1, String param2, String param3)
     {
         String rawMessage = _messages.getString("CREATE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -283,16 +290,16 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1004 : Delete "{0}"</pre>
+     * <pre>ATH-1004 : Delete "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1)
+    public static LogMessage DELETE(String param1, String param2)
     {
         String rawMessage = _messages.getString("DELETE");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -343,16 +350,21 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1002 : Open</pre>
+     * <pre>ATH-1002 : Open : "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage OPEN(String param1, String param2)
     {
         String rawMessage = _messages.getString("OPEN");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -426,6 +438,66 @@ public class AuthenticationProviderMessages
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a AuthenticationProvider message of the Format:
+     * <pre>ATH-1011 : Update : "{0}" : {1} : {2}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage UPDATE(String param1, String param2, String param3)
+    {
+        String rawMessage = _messages.getString("UPDATE");
+
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return UPDATE_LOG_HIERARCHY;
             }
 
             @Override
